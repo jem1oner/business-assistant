@@ -17,7 +17,7 @@ type MotionDeskSettings = {
   pricing_rules?: string;
   tone_style?: string;
   business_goals?: string;
-  use_cases?: string[]; // from onboarding chips
+  use_cases?: string[];
   other_use_case?: string;
 };
 
@@ -81,52 +81,44 @@ export default function ChatPage() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          messages: newMessages,
-          settings: settings ?? null, // <-- onboarding data injected
+          messages: newMessages, // ✅ full conversation (memory)
+          settings: settings ?? null, // ✅ onboarding injected
         }),
       });
 
+      // IMPORTANT: only read the response body ONCE
+      const raw = await res.text();
+
       if (!res.ok) {
-        const text = await res.text();
-        throw new Error(text || "Request failed");
+        throw new Error(raw || "Request failed");
       }
 
-const data = (await res.json()) as any;
+      // Parse JSON if possible, otherwise treat as plain text
+      let reply = "";
+      try {
+        const data = JSON.parse(raw);
 
-const raw = await res.text();
+        reply =
+          (typeof data?.reply === "string" && data.reply) ||
+          (typeof data?.message === "string" && data.message) ||
+          (typeof data?.text === "string" && data.text) ||
+          (typeof data?.content === "string" && data.content) ||
+          (typeof data?.response === "string" && data.response) ||
+          (typeof data?.error === "string" && `Error: ${data.error}`) ||
+          "";
+      } catch {
+        reply = raw || "";
+      }
 
-// Try parse JSON; if not JSON, just treat raw as the reply
-let reply = "";
-try {
-  const data = JSON.parse(raw);
-
-  reply =
-    (typeof data?.reply === "string" && data.reply) ||
-    (typeof data?.message === "string" && data.message) ||
-    (typeof data?.text === "string" && data.text) ||
-    (typeof data?.content === "string" && data.content) ||
-    (typeof data?.response === "string" && data.response) ||
-    (typeof data?.error === "string" && `Error: ${data.error}`) ||
-    "";
-} catch {
-  reply = raw || "";
-}
-
-// TEMP: log so we can see what the API actually returns
-console.log("API raw:", raw);
-console.log("Parsed reply:", reply);
-
-const assistantMsg: ChatMsg = {
-  role: "assistant",
-  content: reply.trim() ? reply : "No response.",
-};
+      const assistantMsg: ChatMsg = {
+        role: "assistant",
+        content: reply?.trim() ? reply : "No response.",
+      };
 
       setMessages([...newMessages, assistantMsg]);
     } catch (e: any) {
       setErrorMsg(e?.message || "Something went wrong.");
-      // Put input back if it failed
       setInput(userMsg.content);
-      // Also remove the last user message from UI if you want; leaving it is fine.
     } finally {
       setLoading(false);
     }
@@ -139,7 +131,7 @@ const assistantMsg: ChatMsg = {
     }
   }
 
-  // Simple styles (clean + similar to your current UI)
+  // -------- Styles (unchanged) --------
   const shell: React.CSSProperties = {
     minHeight: "100vh",
     background: "#f6f7fb",
@@ -250,6 +242,7 @@ const assistantMsg: ChatMsg = {
     fontSize: 12,
     marginTop: 8,
   };
+  // -----------------------------------
 
   return (
     <main style={shell}>
