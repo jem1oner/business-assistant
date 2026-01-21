@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 
@@ -58,10 +59,14 @@ export default function ChatPage() {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, loading]);
 
-  const headerTitle = useMemo(() => {
+  const businessName = useMemo(() => {
     const name = settings?.business_name?.trim();
-    return name ? `MotionDesk • ${name}` : "MotionDesk";
+    return name || "";
   }, [settings]);
+
+  const headerTitle = useMemo(() => {
+    return businessName ? `MotionDesk • ${businessName}` : "MotionDesk";
+  }, [businessName]);
 
   async function sendMessage() {
     if (!input.trim() || loading) return;
@@ -80,8 +85,8 @@ export default function ChatPage() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          messages: newMessages,
-          settings: settings ?? null,
+          messages: newMessages, // ✅ full conversation
+          settings: settings ?? null, // ✅ onboarding injected
         }),
       });
 
@@ -91,6 +96,7 @@ export default function ChatPage() {
         throw new Error(raw || "Request failed");
       }
 
+      // Parse JSON if possible, otherwise treat as plain text
       let reply = "";
       try {
         const data = JSON.parse(raw);
@@ -134,18 +140,18 @@ export default function ChatPage() {
     display: "flex",
     flexDirection: "column",
     background:
-      "radial-gradient(1100px 550px at 15% 0%, #eef2ff 0%, transparent 60%), radial-gradient(1000px 600px at 100% 20%, #ecfeff 0%, transparent 55%), #f6f7fb",
+      "radial-gradient(1100px 650px at 15% 0%, #eef2ff 0%, transparent 60%), radial-gradient(1000px 650px at 100% 20%, #ecfeff 0%, transparent 55%), #f6f7fb",
   };
 
   const topBar: React.CSSProperties = {
-    height: 64,
+    height: 68,
     display: "flex",
     alignItems: "center",
     justifyContent: "space-between",
     padding: "0 18px",
     borderBottom: "1px solid rgba(229,231,235,0.9)",
-    background: "rgba(255,255,255,0.75)",
-    backdropFilter: "blur(12px)",
+    background: "rgba(255,255,255,0.78)",
+    backdropFilter: "blur(14px)",
     position: "sticky",
     top: 0,
     zIndex: 10,
@@ -154,57 +160,50 @@ export default function ChatPage() {
   const brand: React.CSSProperties = {
     display: "flex",
     alignItems: "center",
-    gap: 10,
-    fontWeight: 950,
-    color: "#0f172a",
-    letterSpacing: -0.02,
+    gap: 12,
+    minWidth: 240,
   };
 
-  const logoDot: React.CSSProperties = {
-    width: 34,
-    height: 34,
-    borderRadius: 12,
-    background: "#111827",
-    boxShadow: "0 10px 25px rgba(15, 23, 42, 0.18)",
-  };
-
-  const titleWrap: React.CSSProperties = {
+  const brandText: React.CSSProperties = {
     display: "flex",
     flexDirection: "column",
-    lineHeight: 1.1,
+    lineHeight: 1.12,
   };
 
   const title: React.CSSProperties = {
     fontSize: 14,
     fontWeight: 950,
+    color: "#0f172a",
+    letterSpacing: -0.02,
   };
 
   const subtitle: React.CSSProperties = {
     fontSize: 12,
     color: "#64748b",
-    fontWeight: 700,
+    fontWeight: 800,
     marginTop: 2,
   };
 
   const btnSmall: React.CSSProperties = {
     border: "1px solid rgba(229,231,235,1)",
-    background: "rgba(255,255,255,0.9)",
+    background: "rgba(255,255,255,0.95)",
     borderRadius: 14,
     padding: "10px 12px",
     cursor: "pointer",
     fontWeight: 900,
     color: "#0f172a",
+    boxShadow: "0 10px 28px rgba(15, 23, 42, 0.06)",
   };
 
   const mainWrap: React.CSSProperties = {
     width: "100%",
-    maxWidth: 1080,
+    maxWidth: 1100,
     margin: "0 auto",
-    padding: "18px 16px 120px",
+    padding: "22px 16px 150px",
     flex: 1,
   };
 
-  const card: React.CSSProperties = {
+  const chatCard: React.CSSProperties = {
     width: "100%",
     maxWidth: 980,
     margin: "0 auto",
@@ -212,7 +211,7 @@ export default function ChatPage() {
     border: "1px solid rgba(229,231,235,0.9)",
     background: "rgba(255,255,255,0.78)",
     backdropFilter: "blur(10px)",
-    boxShadow: "0 18px 60px rgba(15, 23, 42, 0.08)",
+    boxShadow: "0 18px 60px rgba(15, 23, 42, 0.10)",
     padding: "18px 18px 10px",
   };
 
@@ -223,28 +222,21 @@ export default function ChatPage() {
     marginBottom: 12,
   });
 
-  const avatar = (role: Role): React.CSSProperties => ({
-    width: 34,
-    height: 34,
+  const avatarWrap = (role: Role): React.CSSProperties => ({
+    width: 38,
+    height: 38,
     borderRadius: 14,
-    border: "1px solid rgba(229,231,235,1)",
-    background: role === "assistant" ? "white" : "transparent",
+    border: role === "assistant" ? "1px solid rgba(229,231,235,1)" : "none",
+    background: role === "assistant" ? "rgba(255,255,255,0.95)" : "transparent",
     display: role === "assistant" ? "flex" : "none",
     alignItems: "center",
     justifyContent: "center",
-    boxShadow: role === "assistant" ? "0 12px 28px rgba(15, 23, 42, 0.08)" : "none",
+    boxShadow: role === "assistant" ? "0 14px 30px rgba(15, 23, 42, 0.08)" : "none",
     flex: "0 0 auto",
   });
 
-  const avatarDot: React.CSSProperties = {
-    width: 10,
-    height: 10,
-    borderRadius: 999,
-    background: "#111827",
-  };
-
   const bubble = (role: Role): React.CSSProperties => ({
-    maxWidth: "min(780px, 92%)",
+    maxWidth: "min(800px, 92%)",
     borderRadius: 18,
     padding: "12px 14px",
     lineHeight: 1.55,
@@ -254,12 +246,12 @@ export default function ChatPage() {
     background:
       role === "user"
         ? "linear-gradient(180deg, #111827 0%, #0b1220 100%)"
-        : "rgba(255,255,255,0.95)",
+        : "rgba(255,255,255,0.96)",
     color: role === "user" ? "white" : "#0f172a",
     boxShadow:
       role === "user"
-        ? "0 14px 30px rgba(15, 23, 42, 0.18)"
-        : "0 10px 22px rgba(15, 23, 42, 0.06)",
+        ? "0 14px 32px rgba(15, 23, 42, 0.18)"
+        : "0 10px 22px rgba(15, 23, 42, 0.07)",
   });
 
   const composer: React.CSSProperties = {
@@ -268,8 +260,8 @@ export default function ChatPage() {
     right: 0,
     bottom: 0,
     borderTop: "1px solid rgba(229,231,235,0.9)",
-    background: "rgba(255,255,255,0.82)",
-    backdropFilter: "blur(12px)",
+    background: "rgba(255,255,255,0.85)",
+    backdropFilter: "blur(14px)",
   };
 
   const composerInner: React.CSSProperties = {
@@ -286,13 +278,14 @@ export default function ChatPage() {
     flex: 1,
     border: "1px solid rgba(229,231,235,1)",
     borderRadius: 16,
-    padding: "12px 12px",
+    padding: "14px 14px",
     fontSize: 14,
     outline: "none",
-    minHeight: 48,
-    maxHeight: 160,
+    minHeight: 54,
+    maxHeight: 180,
     resize: "none",
-    background: "rgba(255,255,255,0.95)",
+    background: "rgba(255,255,255,0.98)",
+    boxShadow: "0 14px 30px rgba(15, 23, 42, 0.06)",
   };
 
   const sendBtn: React.CSSProperties = {
@@ -300,12 +293,12 @@ export default function ChatPage() {
     background: "#111827",
     color: "white",
     borderRadius: 16,
-    padding: "12px 16px",
+    padding: "14px 18px",
     fontWeight: 950,
     cursor: "pointer",
-    minWidth: 96,
+    minWidth: 110,
     opacity: loading ? 0.7 : 1,
-    boxShadow: "0 16px 34px rgba(15, 23, 42, 0.18)",
+    boxShadow: "0 18px 40px rgba(15, 23, 42, 0.20)",
   };
 
   const helper: React.CSSProperties = {
@@ -318,13 +311,44 @@ export default function ChatPage() {
   const errorStyle: React.CSSProperties = {
     color: "#b91c1c",
     fontSize: 13,
-    marginTop: 10,
+    marginTop: 12,
   };
 
-  const divider: React.CSSProperties = {
-    height: 1,
-    background: "rgba(229,231,235,0.9)",
-    margin: "10px 0 14px",
+  const hintBar: React.CSSProperties = {
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: 12,
+    marginBottom: 14,
+    padding: "12px 14px",
+    borderRadius: 16,
+    border: "1px solid rgba(229,231,235,0.9)",
+    background: "rgba(255,255,255,0.70)",
+    boxShadow: "0 14px 30px rgba(15, 23, 42, 0.06)",
+  };
+
+  const hintText: React.CSSProperties = {
+    color: "#0f172a",
+    fontWeight: 850,
+    fontSize: 13,
+  };
+
+  const hintSub: React.CSSProperties = {
+    color: "#64748b",
+    fontWeight: 700,
+    fontSize: 12,
+    marginTop: 2,
+  };
+
+  const smallTag: React.CSSProperties = {
+    border: "1px solid rgba(229,231,235,1)",
+    background: "rgba(255,255,255,0.9)",
+    borderRadius: 999,
+    padding: "8px 10px",
+    fontSize: 12,
+    fontWeight: 900,
+    color: "#0f172a",
+    whiteSpace: "nowrap",
   };
 
   /* ---------------- UI ---------------- */
@@ -333,10 +357,17 @@ export default function ChatPage() {
     <main style={shell}>
       <header style={topBar}>
         <div style={brand}>
-          <div style={logoDot} />
-          <div style={titleWrap}>
+          <Image
+            src="/pulse-logo.jpg"
+            alt="Pulse"
+            width={36}
+            height={36}
+            style={{ borderRadius: 12, boxShadow: "0 14px 30px rgba(15,23,42,0.12)" }}
+            priority
+          />
+          <div style={brandText}>
             <div style={title}>{headerTitle}</div>
-            <div style={subtitle}>Internal assistant • quotes • emails • SOPs</div>
+            <div style={subtitle}>Powered by Pulse</div>
           </div>
         </div>
 
@@ -367,20 +398,44 @@ export default function ChatPage() {
       </header>
 
       <div style={mainWrap}>
-        <div style={card}>
-          <div style={divider} />
+        <div style={hintBar}>
+          <div>
+            <div style={hintText}>Ask MotionDesk to write, plan, quote, or draft.</div>
+            <div style={hintSub}>
+              It uses your onboarding rules + remembers the conversation while you chat.
+            </div>
+          </div>
+          <div style={smallTag}>Enter = send • Shift+Enter = new line</div>
+        </div>
 
+        <div style={chatCard}>
           {messages.map((m, idx) => (
             <div key={idx} style={bubbleRow(m.role)}>
-              <div style={avatar(m.role)}>{m.role === "assistant" && <div style={avatarDot} />}</div>
+              <div style={avatarWrap(m.role)}>
+                {m.role === "assistant" && (
+                  <Image
+                    src="/pulse-logo.jpg"
+                    alt="Pulse"
+                    width={22}
+                    height={22}
+                    style={{ borderRadius: 7 }}
+                  />
+                )}
+              </div>
               <div style={bubble(m.role)}>{m.content}</div>
             </div>
           ))}
 
           {loading && (
             <div style={bubbleRow("assistant")}>
-              <div style={avatar("assistant")}>
-                <div style={avatarDot} />
+              <div style={avatarWrap("assistant")}>
+                <Image
+                  src="/pulse-logo.jpg"
+                  alt="Pulse"
+                  width={22}
+                  height={22}
+                  style={{ borderRadius: 7 }}
+                />
               </div>
               <div style={bubble("assistant")}>Thinking…</div>
             </div>
@@ -400,10 +455,10 @@ export default function ChatPage() {
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={onKeyDown}
-              placeholder="Type here… (Enter to send, Shift+Enter for new line)"
+              placeholder="Type what you need… e.g. ‘Quote a 2m³ load, include callout, and keep it short’"
             />
             <div style={helper}>
-              MotionDesk is for <b>internal</b> business help — keep it practical and ready-to-send.
+              Tip: Be specific (job details, pricing rules, deadlines). MotionDesk will keep the tone you set.
             </div>
           </div>
 
