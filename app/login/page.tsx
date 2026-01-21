@@ -3,7 +3,7 @@
 import Image from "next/image";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { supabaseBrowser } from "../../lib/supabase-browser";
+import { supabaseBrowser } from "@/lib/supabase-browser";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -51,7 +51,8 @@ export default function LoginPage() {
     }
   }
 
-  // ---------------- Styles ----------------
+  /* ---------------- Styles ---------------- */
+
   const shell: React.CSSProperties = {
     minHeight: "100vh",
     display: "flex",
@@ -82,9 +83,6 @@ export default function LoginPage() {
     background: "white",
     padding: "10px 14px",
     borderRadius: 999,
-<<<<<<< HEAD
-    font
-=======
     fontSize: 13,
     fontWeight: 900,
     color: "#334155",
@@ -93,12 +91,13 @@ export default function LoginPage() {
 
   const h1: React.CSSProperties = {
     margin: 0,
-    marginTop: 14,
-    fontSize: 26,
+    marginTop: 16,
+    fontSize: 32,
     fontWeight: 950,
-    letterSpacing: -0.02,
+    letterSpacing: -0.035,
     color: "#0f172a",
     lineHeight: 1.1,
+    textAlign: "center",
   };
 
   const slogan: React.CSSProperties = {
@@ -107,12 +106,16 @@ export default function LoginPage() {
     color: "#64748b",
     fontSize: 14,
     lineHeight: 1.55,
+    textAlign: "center",
+    maxWidth: 440,
+    marginLeft: "auto",
+    marginRight: "auto",
   };
 
   const divider: React.CSSProperties = {
     height: 1,
     background: "#e5e7eb",
-    margin: "18px 0",
+    margin: "20px 0",
   };
 
   const row: React.CSSProperties = {
@@ -158,7 +161,7 @@ export default function LoginPage() {
 
   const input: React.CSSProperties = {
     width: "100%",
-    padding: "12px 12px",
+    padding: "12px",
     border: "1px solid #e5e7eb",
     borderRadius: 12,
     outline: "none",
@@ -188,6 +191,8 @@ export default function LoginPage() {
     color: "#6b7280",
     fontSize: 13,
     lineHeight: 1.55,
+    textAlign: "center",
+    marginTop: 14,
   };
 
   const footerTip: React.CSSProperties = {
@@ -200,12 +205,11 @@ export default function LoginPage() {
     textAlign: "center",
   };
 
-  // ----------------------------------------
+  /* ---------------- JSX ---------------- */
 
   return (
     <main style={shell}>
       <section style={card}>
-        {/* Brand top */}
         <div style={{ display: "flex", justifyContent: "center" }}>
           <div style={badge}>
             <Image
@@ -219,36 +223,20 @@ export default function LoginPage() {
           </div>
         </div>
 
-        <h1
-  style={{
-    ...h1,
-    textAlign: "center",
-    fontSize: 30,
-    letterSpacing: -0.03,
-  }}
->
-MotionDesk
-</h1>
+        <h1 style={h1}>MotionDesk</h1>
 
-<p
-  style={{
-    ...slogan,
-    textAlign: "center",
-    maxWidth: 420,
-    marginLeft: "auto",
-    marginRight: "auto",
-  }}
->
-  Your internal AI workspace - generate new ideas, emails and answers using your business rules.
-</p>
-
+        <p style={slogan}>
+          Your internal AI workspace for owners and staff — generate quotes,
+          emails, and answers using your business rules and tone.
+        </p>
 
         <div style={divider} />
 
-        {/* Login header */}
         <div style={row}>
           <div>
-            <p style={modeTitle}>{mode === "login" ? "Log in" : "Create account"}</p>
+            <p style={modeTitle}>
+              {mode === "login" ? "Log in" : "Create account"}
+            </p>
             <p style={modeSub}>
               {mode === "login"
                 ? "Access MotionDesk."
@@ -267,7 +255,6 @@ MotionDesk
           </button>
         </div>
 
-        {/* Form */}
         <div style={{ marginTop: 14 }}>
           <label style={label}>Email</label>
           <input
@@ -301,15 +288,13 @@ MotionDesk
           {loading ? "Please wait…" : mode === "login" ? "Log in" : "Create account"}
         </button>
 
-        {msg && (
-          <div style={{ marginTop: 12, fontSize: 13, color: "#6b7280" }}>{msg}</div>
-        )}
+        {msg && <div className="text-sm text-slate-500 mt-3">{msg}</div>}
 
-        <div style={{ marginTop: 14, ...muted, textAlign: "center" }}>
-          By continuing you agree to use the assistant responsibly.
+        <div style={muted}>
+          By continuing you agree to use MotionDesk responsibly for internal
+          business use.
         </div>
 
-        {/* Tip */}
         <div style={footerTip}>
           Tip: You can update business details any time in <b>Settings</b>.
         </div>
@@ -317,4 +302,3 @@ MotionDesk
     </main>
   );
 }
->>>>>>> b413bfa (Rename to MotionDesk on login)
