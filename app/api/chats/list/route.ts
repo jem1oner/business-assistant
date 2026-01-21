@@ -1,37 +1,40 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 
-export const runtime = "nodejs";
-
-function supabaseServer() {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-  const service = process.env.SUPABASE_SERVICE_ROLE_KEY!;
-  return createClient(url, service, { auth: { persistSession: false } });
+function getBearerToken(req: Request) {
+  const auth = req.headers.get("authorization") || "";
+  const m = auth.match(/^Bearer\s+(.+)$/i);
+  return m ? m[1] : null;
 }
 
 export async function GET(req: Request) {
   try {
-    const supabase = supabaseServer();
+    const token = getBearerToken(req);
+    if (!token) {
+      return NextResponse.json({ error: "Missing auth token" }, { status: 401 });
+    }
 
-    const authHeader = req.headers.get("authorization") || "";
-    const token = authHeader.startsWith("Bearer ") ? authHeader.slice(7) : null;
-    if (!token) return NextResponse.json({ chats: [] });
+    const supabase = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      { global: { headers: { Authorization: `Bearer ${token}` } } }
+    );
 
-    const { data: userData } = await supabase.auth.getUser(token);
-    const user = userData?.user;
-    if (!user) return NextResponse.json({ chats: [] });
-
+    // Basic: list chats
+    // NOTE: If your table uses different column names, adjust here.
     const { data, error } = await supabase
       .from("motiondesk_chats")
       .select("id,title,created_at")
-      .eq("user_id", user.id)
       .order("created_at", { ascending: false })
       .limit(50);
 
     if (error) throw error;
 
-    return NextResponse.json({ chats: data || [] });
-  } catch {
-    return NextResponse.json({ chats: [] });
+    return NextResponse.json({ chats: data ?? [] });
+  } catch (e: any) {
+    return NextResponse.json(
+      { error: e?.message || "Failed to list chats" },
+      { status: 500 }
+    );
   }
 }
