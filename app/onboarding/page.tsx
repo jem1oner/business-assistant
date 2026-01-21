@@ -1,159 +1,467 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { supabaseBrowser } from "../../lib/supabase-browser";
+import { supabaseBrowser } from "@/lib/supabase-browser";
+
+type UseCase =
+  | "Quotes & pricing"
+  | "Write emails & messages"
+  | "Create SOPs & checklists"
+  | "Staff onboarding & training"
+  | "Job planning & next steps"
+  | "Sales scripts & objections"
+  | "Marketing content"
+  | "Customer support drafts (internal)"
+  | "Other";
 
 export default function OnboardingPage() {
   const router = useRouter();
 
-  const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
-  const [msg, setMsg] = useState<string | null>(null);
-
+  // Existing fields
   const [businessName, setBusinessName] = useState("");
   const [businessType, setBusinessType] = useState("");
   const [location, setLocation] = useState("");
   const [pricingRules, setPricingRules] = useState("");
-  const [tone, setTone] = useState("");
+  const [toneStyle, setToneStyle] = useState("");
 
-  // If user already onboarded, skip this page
-  useEffect(() => {
-    (async () => {
-      const { data: auth } = await supabaseBrowser.auth.getUser();
-      if (!auth?.user) {
-        router.push("/login");
-        return;
-      }
+  // New fields
+  const [businessGoals, setBusinessGoals] = useState("");
+  const [useCases, setUseCases] = useState<UseCase[]>([
+    "Quotes & pricing",
+    "Write emails & messages",
+  ]);
+  const [otherUseCase, setOtherUseCase] = useState("");
 
-      const { data: profile } = await supabaseBrowser
-        .from("profiles")
-        .select("*")
-        .eq("id", auth.user.id)
-        .maybeSingle();
+  const [loading, setLoading] = useState(false);
+  const [msg, setMsg] = useState<string | null>(null);
 
-      if (profile?.onboarding_complete) {
-        router.push("/chat");
-        return;
-      }
+  const useCaseOptions: UseCase[] = useMemo(
+    () => [
+      "Quotes & pricing",
+      "Write emails & messages",
+      "Create SOPs & checklists",
+      "Staff onboarding & training",
+      "Job planning & next steps",
+      "Sales scripts & objections",
+      "Marketing content",
+      "Customer support drafts (internal)",
+      "Other",
+    ],
+    []
+  );
 
-      setLoading(false);
-    })();
-  }, [router]);
-
-  async function save() {
-    setMsg(null);
-    setSaving(true);
-
-    try {
-      const { data: auth } = await supabaseBrowser.auth.getUser();
-      if (!auth?.user) {
-        router.push("/login");
-        return;
-      }
-
-      const { error } = await supabaseBrowser.from("profiles").upsert({
-        id: auth.user.id,
-        onboarding_complete: true,
-        business_name: businessName,
-        business_type: businessType,
-        location,
-        pricing_rules: pricingRules,
-        tone,
-        updated_at: new Date().toISOString(),
-      });
-
-      if (error) throw error;
-
-      router.push("/chat");
-    } catch (e: any) {
-      setMsg(e?.message || "Could not save.");
-    } finally {
-      setSaving(false);
-    }
-  }
-
-  if (loading) {
-    return (
-      <main style={{ maxWidth: 600, margin: "60px auto", padding: 16 }}>
-        Loading...
-      </main>
+  function toggleUseCase(val: UseCase) {
+    setUseCases((prev) =>
+      prev.includes(val) ? prev.filter((x) => x !== val) : [...prev, val]
     );
   }
 
+  async function handleFinish() {
+    setMsg(null);
+    setLoading(true);
+
+    try {
+      // Simple validation
+      if (!businessName.trim()) {
+        setMsg("Please enter your business name.");
+        return;
+      }
+
+      // Example payload (adjust to match your DB schema)
+      const payload = {
+        business_name: businessName.trim(),
+        business_type: businessType.trim(),
+        location: location.trim(),
+        pricing_rules: pricingRules.trim(),
+        tone_style: toneStyle.trim(),
+        business_goals: businessGoals.trim(),
+        use_cases: useCases,
+        other_use_case: useCases.includes("Other") ? otherUseCase.trim() : "",
+        updated_at: new Date().toISOString(),
+      };
+
+      // --- SAVE LOGIC ---
+      // If you already have a table (e.g. "profiles" or "business_settings"),
+      // replace this with your real upsert/insert.
+      //
+      // Example pattern (commented):
+      //
+      // const { data: auth } = await supabaseBrowser.auth.getUser();
+      // const userId = auth.user?.id;
+      // if (!userId) throw new Error("Not logged in.");
+      //
+      // const { error } = await supabaseBrowser
+      //   .from("business_settings")
+      //   .upsert({ user_id: userId, ...payload });
+      // if (error) throw error;
+
+      // TEMP: remove this line once you wire saving
+      console.log("ONBOARDING PAYLOAD:", payload);
+
+      router.push("/chat");
+    } catch (e: any) {
+      setMsg(e?.message || "Something went wrong.");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  /* ---------------- Styles ---------------- */
+
+  const shell: React.CSSProperties = {
+    minHeight: "100vh",
+    padding: "42px 18px",
+    background:
+      "radial-gradient(1100px 550px at 20% 0%, #eef2ff 0%, transparent 60%), radial-gradient(1000px 500px at 100% 20%, #ecfeff 0%, transparent 55%), #f6f7fb",
+    display: "flex",
+    justifyContent: "center",
+  };
+
+  const card: React.CSSProperties = {
+    width: "100%",
+    maxWidth: 980,
+    borderRadius: 18,
+    border: "1px solid #e5e7eb",
+    background: "rgba(255,255,255,0.92)",
+    backdropFilter: "blur(10px)",
+    boxShadow: "0 16px 50px rgba(15, 23, 42, 0.10)",
+    padding: 24,
+  };
+
+  const topRow: React.CSSProperties = {
+    display: "flex",
+    alignItems: "flex-start",
+    justifyContent: "space-between",
+    gap: 16,
+    flexWrap: "wrap",
+  };
+
+  const badge: React.CSSProperties = {
+    display: "inline-flex",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 10,
+    border: "1px solid #e5e7eb",
+    background: "white",
+    padding: "10px 14px",
+    borderRadius: 999,
+    fontSize: 13,
+    fontWeight: 900,
+    color: "#334155",
+    width: "fit-content",
+  };
+
+  const h1: React.CSSProperties = {
+    margin: 0,
+    fontSize: 28,
+    fontWeight: 950,
+    letterSpacing: -0.03,
+    color: "#0f172a",
+    lineHeight: 1.15,
+  };
+
+  const sub: React.CSSProperties = {
+    margin: "10px 0 0",
+    color: "#64748b",
+    fontSize: 14,
+    lineHeight: 1.55,
+    maxWidth: 720,
+  };
+
+  const divider: React.CSSProperties = {
+    height: 1,
+    background: "#e5e7eb",
+    margin: "18px 0 22px",
+  };
+
+  const grid: React.CSSProperties = {
+    display: "grid",
+    gridTemplateColumns: "1.15fr 0.85fr",
+    gap: 16,
+  };
+
+  const colFull: React.CSSProperties = {
+    gridColumn: "1 / -1",
+  };
+
+  const section: React.CSSProperties = {
+    border: "1px solid #e5e7eb",
+    borderRadius: 16,
+    background: "white",
+    padding: 16,
+  };
+
+  const sectionTitle: React.CSSProperties = {
+    margin: 0,
+    fontSize: 14,
+    fontWeight: 950,
+    color: "#0f172a",
+    letterSpacing: -0.01,
+  };
+
+  const sectionHint: React.CSSProperties = {
+    margin: "6px 0 0",
+    color: "#6b7280",
+    fontSize: 13,
+    lineHeight: 1.45,
+  };
+
+  const label: React.CSSProperties = {
+    display: "block",
+    fontSize: 13,
+    fontWeight: 850,
+    color: "#334155",
+    marginBottom: 6,
+    marginTop: 12,
+  };
+
+  const input: React.CSSProperties = {
+    width: "100%",
+    padding: "12px 12px",
+    border: "1px solid #e5e7eb",
+    borderRadius: 12,
+    outline: "none",
+    fontSize: 14,
+    background: "white",
+  };
+
+  const textarea: React.CSSProperties = {
+    ...input,
+    minHeight: 120,
+    resize: "vertical",
+    fontFamily: "inherit",
+  };
+
+  const bigTextarea: React.CSSProperties = {
+    ...input,
+    minHeight: 160,
+    resize: "vertical",
+    fontFamily: "inherit",
+  };
+
+  const chipsWrap: React.CSSProperties = {
+    display: "flex",
+    flexWrap: "wrap",
+    gap: 10,
+    marginTop: 12,
+  };
+
+  const chip: React.CSSProperties = {
+    display: "inline-flex",
+    alignItems: "center",
+    gap: 10,
+    border: "1px solid #e5e7eb",
+    borderRadius: 999,
+    padding: "10px 12px",
+    background: "white",
+    cursor: "pointer",
+    userSelect: "none",
+  };
+
+  const checkbox: React.CSSProperties = {
+    width: 18,
+    height: 18,
+    accentColor: "#111827",
+  };
+
+  const chipText: React.CSSProperties = {
+    fontSize: 13,
+    fontWeight: 900,
+    color: "#0f172a",
+  };
+
+  const actions: React.CSSProperties = {
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: 12,
+    marginTop: 16,
+    flexWrap: "wrap",
+  };
+
+  const msgStyle: React.CSSProperties = {
+    color: "#6b7280",
+    fontSize: 13,
+  };
+
+  const btnPrimary: React.CSSProperties = {
+    padding: "12px 14px",
+    borderRadius: 12,
+    border: "1px solid rgba(0,0,0,0.08)",
+    background: "#111827",
+    color: "white",
+    fontWeight: 950,
+    cursor: "pointer",
+    minWidth: 160,
+  };
+
+  const tip: React.CSSProperties = {
+    marginTop: 14,
+    color: "#6b7280",
+    fontSize: 13,
+    lineHeight: 1.5,
+  };
+
+  /* Responsive: stack columns on small screens */
+  const responsiveStyle = `
+    @media (max-width: 860px) {
+      .md-grid { grid-template-columns: 1fr !important; }
+    }
+  `;
+
   return (
-    <main style={{ maxWidth: 700, margin: "60px auto", padding: 16 }}>
-      <h1 style={{ fontSize: 26, fontWeight: 700 }}>Set up your business</h1>
-      <p style={{ marginTop: 8, color: "#444" }}>
-        Fill this in once. You can change it later.
-      </p>
+    <main style={shell}>
+      <style>{responsiveStyle}</style>
 
-      <div style={{ marginTop: 18 }}>
-        <label style={{ display: "block", marginBottom: 6 }}>Business name</label>
-        <input
-          value={businessName}
-          onChange={(e) => setBusinessName(e.target.value)}
-          style={{ width: "100%", padding: 10, border: "1px solid #ddd", borderRadius: 8 }}
-          placeholder="JJ Cleanup Group"
-        />
-      </div>
+      <section style={card}>
+        <div style={topRow}>
+          <div>
+            <h1 style={h1}>Set up MotionDesk</h1>
+            <p style={sub}>
+              Fill this in once. Your team can update it later in <b>Settings</b>.
+              The more detail you add here, the better your assistant behaves.
+            </p>
+          </div>
 
-      <div style={{ marginTop: 12 }}>
-        <label style={{ display: "block", marginBottom: 6 }}>Business type</label>
-        <input
-          value={businessType}
-          onChange={(e) => setBusinessType(e.target.value)}
-          style={{ width: "100%", padding: 10, border: "1px solid #ddd", borderRadius: 8 }}
-          placeholder="Rubbish removal / electrician / plumber etc"
-        />
-      </div>
+          <div style={badge}>
+            <span style={{ fontWeight: 950 }}>Powered by Pulse</span>
+          </div>
+        </div>
 
-      <div style={{ marginTop: 12 }}>
-        <label style={{ display: "block", marginBottom: 6 }}>Location</label>
-        <input
-          value={location}
-          onChange={(e) => setLocation(e.target.value)}
-          style={{ width: "100%", padding: 10, border: "1px solid #ddd", borderRadius: 8 }}
-          placeholder="Melbourne, VIC"
-        />
-      </div>
+        <div style={divider} />
 
-      <div style={{ marginTop: 12 }}>
-        <label style={{ display: "block", marginBottom: 6 }}>Pricing / quoting rules</label>
-        <textarea
-          value={pricingRules}
-          onChange={(e) => setPricingRules(e.target.value)}
-          style={{ width: "100%", minHeight: 120, padding: 10, border: "1px solid #ddd", borderRadius: 8 }}
-          placeholder="Minimum callout, per-metre pricing, extras, etc."
-        />
-      </div>
+        <div className="md-grid" style={grid}>
+          {/* LEFT COLUMN */}
+          <div style={section}>
+            <p style={sectionTitle}>Business details</p>
+            <p style={sectionHint}>
+              This gives MotionDesk context (what you do, where you operate, and how you quote).
+            </p>
 
-      <div style={{ marginTop: 12 }}>
-        <label style={{ display: "block", marginBottom: 6 }}>Tone & style</label>
-        <textarea
-          value={tone}
-          onChange={(e) => setTone(e.target.value)}
-          style={{ width: "100%", minHeight: 90, padding: 10, border: "1px solid #ddd", borderRadius: 8 }}
-          placeholder="Friendly Aussie, professional, short and confident, etc."
-        />
-      </div>
+            <label style={label}>Business name</label>
+            <input
+              style={input}
+              value={businessName}
+              onChange={(e) => setBusinessName(e.target.value)}
+              placeholder="JJ Cleanup Group"
+            />
 
-      <button
-        onClick={save}
-        disabled={saving}
-        style={{
-          marginTop: 16,
-          padding: "12px 14px",
-          borderRadius: 10,
-          border: "1px solid #ddd",
-          cursor: "pointer",
-          opacity: saving ? 0.6 : 1,
-        }}
-      >
-        {saving ? "Saving..." : "Finish setup"}
-      </button>
+            <label style={label}>Business type</label>
+            <input
+              style={input}
+              value={businessType}
+              onChange={(e) => setBusinessType(e.target.value)}
+              placeholder="Rubbish removal / electrician / plumber etc"
+            />
 
-      {msg && <p style={{ marginTop: 12 }}>{msg}</p>}
+            <label style={label}>Location</label>
+            <input
+              style={input}
+              value={location}
+              onChange={(e) => setLocation(e.target.value)}
+              placeholder="Melbourne, VIC"
+            />
+
+            <label style={label}>Pricing / quoting rules</label>
+            <textarea
+              style={textarea}
+              value={pricingRules}
+              onChange={(e) => setPricingRules(e.target.value)}
+              placeholder="Minimum callout, what affects price, extras, how you quote jobs, common add-ons, etc."
+            />
+
+            <label style={label}>Tone & style</label>
+            <textarea
+              style={textarea}
+              value={toneStyle}
+              onChange={(e) => setToneStyle(e.target.value)}
+              placeholder="Friendly Aussie, professional, short and confident, etc."
+            />
+          </div>
+
+          {/* RIGHT COLUMN */}
+          <div style={section}>
+            <p style={sectionTitle}>How you want to use MotionDesk</p>
+            <p style={sectionHint}>
+              Pick what matters most. This lets the assistant focus and respond in the right format.
+            </p>
+
+            <div style={chipsWrap}>
+              {useCaseOptions.map((opt) => {
+                const checked = useCases.includes(opt);
+                return (
+                  <div
+                    key={opt}
+                    style={{
+                      ...chip,
+                      borderColor: checked ? "#111827" : "#e5e7eb",
+                      background: checked ? "rgba(17,24,39,0.04)" : "white",
+                    }}
+                    onClick={() => toggleUseCase(opt)}
+                    role="button"
+                    aria-label={`Toggle ${opt}`}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={checked}
+                      readOnly
+                      style={checkbox}
+                    />
+                    <span style={chipText}>{opt}</span>
+                  </div>
+                );
+              })}
+            </div>
+
+            {useCases.includes("Other") && (
+              <>
+                <label style={label}>Other (optional)</label>
+                <input
+                  style={input}
+                  value={otherUseCase}
+                  onChange={(e) => setOtherUseCase(e.target.value)}
+                  placeholder="e.g. Safety checklists, job notes, internal FAQs..."
+                />
+              </>
+            )}
+
+            <div style={{ height: 14 }} />
+
+            <p style={sectionTitle}>Business goals</p>
+            <p style={sectionHint}>
+              Tell MotionDesk what you’re trying to achieve so it can prioritize the right outputs.
+            </p>
+
+            <label style={label}>Goals</label>
+            <textarea
+              style={bigTextarea}
+              value={businessGoals}
+              onChange={(e) => setBusinessGoals(e.target.value)}
+              placeholder="Examples: speed up quoting, train new staff faster, keep replies consistent, reduce back-and-forth, improve close rate, organize processes..."
+            />
+
+            <div style={tip}>
+              Tip: If you want, include your “gold standard” examples (how you like quotes written, how you talk to customers, etc.).
+            </div>
+          </div>
+
+          {/* ACTIONS FULL WIDTH */}
+          <div style={{ ...colFull, ...actions }}>
+            <div style={msgStyle}>
+              {msg ? msg : "You can refine this later in Settings."}
+            </div>
+
+            <button
+              style={{ ...btnPrimary, opacity: loading ? 0.75 : 1 }}
+              disabled={loading}
+              onClick={handleFinish}
+            >
+              {loading ? "Saving…" : "Finish setup"}
+            </button>
+          </div>
+        </div>
+      </section>
     </main>
   );
 }
