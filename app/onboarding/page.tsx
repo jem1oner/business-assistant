@@ -310,34 +310,33 @@ export default function OnboardingPage() {
     }
   `;
 
-  return (
-    <main style={shell}>
-      <style>{responsiveStyle}</style>
+ return (
+  <main style={shell}>
+    <style>{responsiveStyle}</style>
 
-      <section style={card}>
-        <div style={topRow}>
-          <div>
-            <h1 style={h1}>Set up MotionDesk</h1>
-            <p style={sub}>
-              Fill this in once. Your team can update it later in <b>Settings</b>.
-              The more detail you add here, the better your assistant behaves.
-            </p>
-          </div>
-
-   <div style={badge}>
-  <img
-    src="/pulse-logo.jpg"
-    alt="Pulse"
-    width={28}
-    height={28}
-    style={{ borderRadius: 7 }}
-  />
-  <span>Powered by Pulse</span>
-</div>
-          </div>
+    <section style={card}>
+      <div style={topRow}>
+        <div>
+          <h1 style={h1}>Set up MotionDesk</h1>
+          <p style={sub}>
+            Fill this in once. Your team can update it later in <b>Settings</b>.
+            The more detail you add here, the better your assistant behaves.
+          </p>
         </div>
 
-        <div style={divider} />
+        <div style={badge}>
+          <img
+            src="/pulse-logo.jpg"
+            alt="Pulse"
+            width={28}
+            height={28}
+            style={{ borderRadius: 7 }}
+          />
+          <span>Powered by Pulse</span>
+        </div>
+      </div>
+
+      <div style={divider} />
 
         <div className="md-grid" style={grid}>
           {/* LEFT COLUMN */}
