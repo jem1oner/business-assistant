@@ -378,13 +378,13 @@ export default function OnboardingPage() {
               placeholder="Product pricing, minimum callout fee, extras, what affects price, common add-ons, ect.
             />
 
-            <label style={label}>Tone & style</label>
-            <textarea
-              style={textarea}
-              value={toneStyle}
-              onChange={(e) => setToneStyle(e.target.value)}
-              placeholder="Friendly Aussie, professional, short and confident, etc."
-            />
+<label style={label}>Tone & style</label>
+<textarea
+  style={textarea}
+  value={toneStyle}
+  onChange={(e) => setToneStyle(e.target.value)}
+  placeholder={"Friendly Aussie, professional, short and confident, etc."}
+/>
           </div>
 
           {/* RIGHT COLUMN */}
