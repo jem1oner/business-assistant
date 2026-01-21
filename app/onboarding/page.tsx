@@ -359,7 +359,7 @@ export default function OnboardingPage() {
               style={textarea}
               value={pricingRules}
               onChange={(e) => setPricingRules(e.target.value)}
-              placeholder="Minimum callout, what affects price, extras, common add-ons."
+              placeholder="Product price, what affects price, extras , common add-ons, callout minimums, ect."
             />
 
             <label style={label}>Tone & style</label>
