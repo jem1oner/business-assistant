@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabaseBrowser } from "@/lib/supabase-browser";
@@ -62,13 +63,11 @@ export default function OnboardingPage() {
     setLoading(true);
 
     try {
-      // Simple validation
       if (!businessName.trim()) {
         setMsg("Please enter your business name.");
         return;
       }
 
-      // Example payload (adjust to match your DB schema)
       const payload = {
         business_name: businessName.trim(),
         business_type: businessType.trim(),
@@ -81,22 +80,8 @@ export default function OnboardingPage() {
         updated_at: new Date().toISOString(),
       };
 
-      // --- SAVE LOGIC ---
-      // If you already have a table (e.g. "profiles" or "business_settings"),
-      // replace this with your real upsert/insert.
-      //
-      // Example pattern (commented):
-      //
-      // const { data: auth } = await supabaseBrowser.auth.getUser();
-      // const userId = auth.user?.id;
-      // if (!userId) throw new Error("Not logged in.");
-      //
-      // const { error } = await supabaseBrowser
-      //   .from("business_settings")
-      //   .upsert({ user_id: userId, ...payload });
-      // if (error) throw error;
-
-      // TEMP: remove this line once you wire saving
+      // If you already have a table, wire it here.
+      // console.log for now so nothing breaks.
       console.log("ONBOARDING PAYLOAD:", payload);
 
       router.push("/chat");
@@ -303,40 +288,39 @@ export default function OnboardingPage() {
     lineHeight: 1.5,
   };
 
-  /* Responsive: stack columns on small screens */
   const responsiveStyle = `
     @media (max-width: 860px) {
       .md-grid { grid-template-columns: 1fr !important; }
     }
   `;
 
- return (
-  <main style={shell}>
-    <style>{responsiveStyle}</style>
+  return (
+    <main style={shell}>
+      <style>{responsiveStyle}</style>
 
-    <section style={card}>
-      <div style={topRow}>
-        <div>
-          <h1 style={h1}>Set up MotionDesk</h1>
-          <p style={sub}>
-            Fill this in once. Your team can update it later in <b>Settings</b>.
-            The more detail you add here, the better your assistant behaves.
-          </p>
+      <section style={card}>
+        <div style={topRow}>
+          <div>
+            <h1 style={h1}>Set up MotionDesk</h1>
+            <p style={sub}>
+              Fill this in once. Your team can update it later in <b>Settings</b>.
+              The more detail you add here, the better your assistant behaves.
+            </p>
+          </div>
+
+          <div style={badge}>
+            <Image
+              src="/pulse-logo.jpg"
+              alt="Pulse"
+              width={28}
+              height={28}
+              style={{ borderRadius: 7 }}
+            />
+            <span>Powered by Pulse</span>
+          </div>
         </div>
 
-        <div style={badge}>
-          <img
-            src="/pulse-logo.jpg"
-            alt="Pulse"
-            width={28}
-            height={28}
-            style={{ borderRadius: 7 }}
-          />
-          <span>Powered by Pulse</span>
-        </div>
-      </div>
-
-      <div style={divider} />
+        <div style={divider} />
 
         <div className="md-grid" style={grid}>
           {/* LEFT COLUMN */}
@@ -375,23 +359,23 @@ export default function OnboardingPage() {
               style={textarea}
               value={pricingRules}
               onChange={(e) => setPricingRules(e.target.value)}
-              placeholder="Product pricing, minimum callout fee, extras, what affects price, common add-ons, ect.
+              placeholder="Minimum callout, what affects price, extras, common add-ons."
             />
 
-<label style={label}>Tone & style</label>
-<textarea
-  style={textarea}
-  value={toneStyle}
-  onChange={(e) => setToneStyle(e.target.value)}
-  placeholder={"Friendly Aussie, professional, short and confident, etc."}
-/>
+            <label style={label}>Tone & style</label>
+            <textarea
+              style={textarea}
+              value={toneStyle}
+              onChange={(e) => setToneStyle(e.target.value)}
+              placeholder="Friendly Aussie. Professional. Short and confident."
+            />
           </div>
 
           {/* RIGHT COLUMN */}
           <div style={section}>
             <p style={sectionTitle}>How you want to use MotionDesk</p>
             <p style={sectionHint}>
-              Pick what matters most. This lets the assistant focus and respond in the right format.
+              Pick what matters most. This helps MotionDesk respond in the right format.
             </p>
 
             <div style={chipsWrap}>
@@ -409,12 +393,7 @@ export default function OnboardingPage() {
                     role="button"
                     aria-label={`Toggle ${opt}`}
                   >
-                    <input
-                      type="checkbox"
-                      checked={checked}
-                      readOnly
-                      style={checkbox}
-                    />
+                    <input type="checkbox" checked={checked} readOnly style={checkbox} />
                     <span style={chipText}>{opt}</span>
                   </div>
                 );
@@ -428,7 +407,7 @@ export default function OnboardingPage() {
                   style={input}
                   value={otherUseCase}
                   onChange={(e) => setOtherUseCase(e.target.value)}
-                  placeholder="e.g. Safety checklists, job notes, internal FAQs..."
+                  placeholder="Safety checklists, internal FAQs, job notes, etc."
                 />
               </>
             )}
@@ -437,7 +416,7 @@ export default function OnboardingPage() {
 
             <p style={sectionTitle}>Business goals</p>
             <p style={sectionHint}>
-              Tell MotionDesk what you’re trying to achieve so it can prioritize the right outputs.
+              Tell MotionDesk what you are trying to achieve so it can prioritize the right outputs.
             </p>
 
             <label style={label}>Goals</label>
@@ -445,26 +424,24 @@ export default function OnboardingPage() {
               style={bigTextarea}
               value={businessGoals}
               onChange={(e) => setBusinessGoals(e.target.value)}
-              placeholder="Examples: speed up quoting, train new staff faster, keep replies consistent, reduce back-and-forth, improve close rate, organize processes..."
+              placeholder="Speed up quoting. Train staff faster. Keep replies consistent. Reduce admin."
             />
 
             <div style={tip}>
-              Tip: If you want, include your “gold standard” examples (how you like quotes written, how you talk to customers, etc.).
+              Tip: Add examples of your best quotes or messages for even better results.
             </div>
           </div>
 
-          {/* ACTIONS FULL WIDTH */}
+          {/* ACTIONS */}
           <div style={{ ...colFull, ...actions }}>
-            <div style={msgStyle}>
-              {msg ? msg : "You can refine this later in Settings."}
-            </div>
+            <div style={msgStyle}>{msg ? msg : "You can refine this later in Settings."}</div>
 
             <button
               style={{ ...btnPrimary, opacity: loading ? 0.75 : 1 }}
               disabled={loading}
               onClick={handleFinish}
             >
-              {loading ? "Saving…" : "Finish setup"}
+              {loading ? "Saving..." : "Finish setup"}
             </button>
           </div>
         </div>
