@@ -324,8 +324,16 @@ export default function OnboardingPage() {
             </p>
           </div>
 
-          <div style={badge}>
-            <span style={{ fontWeight: 950 }}>Powered by Pulse</span>
+   <div style={badge}>
+  <img
+    src="/pulse-logo.jpg"
+    alt="Pulse"
+    width={28}
+    height={28}
+    style={{ borderRadius: 7 }}
+  />
+  <span>Powered by Pulse</span>
+</div>
           </div>
         </div>
 
@@ -368,7 +376,7 @@ export default function OnboardingPage() {
               style={textarea}
               value={pricingRules}
               onChange={(e) => setPricingRules(e.target.value)}
-              placeholder="Minimum callout, what affects price, extras, how you quote jobs, common add-ons, etc."
+              placeholder="Product pricing, minimum callout fee, extras, what affects price, common add-ons, ect.
             />
 
             <label style={label}>Tone & style</label>
