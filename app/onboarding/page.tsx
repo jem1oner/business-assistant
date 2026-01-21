@@ -82,9 +82,15 @@ export default function OnboardingPage() {
 
       // If you already have a table, wire it here.
       // console.log for now so nothing breaks.
-      console.log("ONBOARDING PAYLOAD:", payload);
+console.log("ONBOARDING PAYLOAD:", payload);
 
-      router.push("/chat");
+// Save onboarding settings for chat memory
+localStorage.setItem(
+  "motiondesk_settings_v1",
+  JSON.stringify(payload)
+);
+
+router.push("/chat");
     } catch (e: any) {
       setMsg(e?.message || "Something went wrong.");
     } finally {
