@@ -1,405 +1,326 @@
 "use client";
 
-import Image from "next/image";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { supabaseBrowser } from "../../lib/supabase-browser";
 
-type Msg = { role: "user" | "assistant"; content: string };
+type Role = "user" | "assistant";
+
+type ChatMsg = {
+  role: Role;
+  content: string;
+};
+
+type MotionDeskSettings = {
+  business_name?: string;
+  business_type?: string;
+  location?: string;
+  pricing_rules?: string;
+  tone_style?: string;
+  business_goals?: string;
+  use_cases?: string[]; // from onboarding chips
+  other_use_case?: string;
+};
+
+const SETTINGS_KEY = "motiondesk_settings_v1";
 
 export default function ChatPage() {
   const router = useRouter();
+
+  const [settings, setSettings] = useState<MotionDeskSettings | null>(null);
+  const [messages, setMessages] = useState<ChatMsg[]>([
+    {
+      role: "assistant",
+      content:
+        "Hey — what do you need done? (quote, email, SOP/checklist, staff message, or something else)",
+    },
+  ]);
+
+  const [input, setInput] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
+
   const bottomRef = useRef<HTMLDivElement | null>(null);
 
-  const [loading, setLoading] = useState(true);
-  const [profile, setProfile] = useState<any>(null);
-
-  const [message, setMessage] = useState("");
-  const [messages, setMessages] = useState<Msg[]>([]);
-  const [sending, setSending] = useState(false);
-
-  const locationLine = useMemo(() => {
-    return profile?.location ? String(profile.location) : "";
-  }, [profile]);
-
+  // Load onboarding settings (localStorage)
   useEffect(() => {
-    (async () => {
-      const { data: auth } = await supabaseBrowser.auth.getUser();
-      if (!auth?.user) {
-        router.push("/login");
-        return;
-      }
+    try {
+      const raw = localStorage.getItem(SETTINGS_KEY);
+      if (!raw) return;
 
-      const { data: p } = await supabaseBrowser
-        .from("profiles")
-        .select("*")
-        .eq("id", auth.user.id)
-        .maybeSingle();
+      const parsed = JSON.parse(raw) as MotionDeskSettings;
+      setSettings(parsed);
+    } catch {
+      // ignore
+    }
+  }, []);
 
-      if (!p?.onboarding_complete) {
-        router.push("/onboarding");
-        return;
-      }
-
-      setProfile(p);
-      setLoading(false);
-    })();
-  }, [router]);
-
+  // Auto-scroll to bottom
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages, sending]);
+  }, [messages, loading]);
 
-  async function logout() {
-    await supabaseBrowser.auth.signOut();
-    router.push("/login");
-  }
-
-  function injectQuickPrompt(kind: "quote" | "email" | "sms") {
-    const templates: Record<typeof kind, string> = {
-      quote:
-        "Write a professional quote. Ask any missing questions first.\n\n" +
-        "Job / service details:\n" +
-        "• Write job specifics here\n" +
-        "• Location (if relevant)\n" +
-        "• Timeframe or urgency\n" +
-        "• Any special requirements\n",
-
-      email:
-        "Write a professional business email.\n\n" +
-        "Context:\n" +
-        "• Write what you want the email to say here\n" +
-        "• Who is it to?\n" +
-        "• What is the purpose?\n" +
-        "• Any important dates, prices, or actions\n",
-
-      sms:
-        "Write a short, professional SMS.\n\n" +
-        "Context:\n" +
-        "• Write the customer’s message here\n" +
-        "• Write what you want to reply here\n" +
-        "• Any next steps or timing\n",
-    };
-
-    setMessage(templates[kind]);
-  }
+  const headerTitle = useMemo(() => {
+    const name = settings?.business_name?.trim();
+    return name ? `MotionDesk • ${name}` : "MotionDesk";
+  }, [settings]);
 
   async function sendMessage() {
-    if (!message.trim() || sending) return;
+    if (!input.trim() || loading) return;
 
-    const userText = message.trim();
-    setMessage("");
-    setSending(true);
-    setMessages((prev) => [...prev, { role: "user", content: userText }]);
+    setErrorMsg(null);
+    setLoading(true);
+
+    const userMsg: ChatMsg = { role: "user", content: input.trim() };
+    const newMessages = [...messages, userMsg];
+
+    setMessages(newMessages);
+    setInput("");
 
     try {
       const res = await fetch("/api/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          message: userText,
-          businessInfo: `Business name: ${profile.business_name}\nBusiness type: ${profile.business_type}\nLocation: ${profile.location}`,
-          pricingRules: profile.pricing_rules,
-          tone: profile.tone,
+          messages: newMessages,
+          settings: settings ?? null, // <-- onboarding data injected
         }),
       });
 
-      const data = await res.json().catch(() => null);
-
       if (!res.ok) {
-        setMessages((prev) => [
-          ...prev,
-          {
-            role: "assistant",
-            content: `ERROR (${res.status}): ${data?.error || "Request failed"}`,
-          },
-        ]);
-      } else {
-        setMessages((prev) => [
-          ...prev,
-          { role: "assistant", content: data?.text || "No response text." },
-        ]);
+        const text = await res.text();
+        throw new Error(text || "Request failed");
       }
+
+const data = (await res.json()) as any;
+
+const raw = await res.text();
+
+// Try parse JSON; if not JSON, just treat raw as the reply
+let reply = "";
+try {
+  const data = JSON.parse(raw);
+
+  reply =
+    (typeof data?.reply === "string" && data.reply) ||
+    (typeof data?.message === "string" && data.message) ||
+    (typeof data?.text === "string" && data.text) ||
+    (typeof data?.content === "string" && data.content) ||
+    (typeof data?.response === "string" && data.response) ||
+    (typeof data?.error === "string" && `Error: ${data.error}`) ||
+    "";
+} catch {
+  reply = raw || "";
+}
+
+// TEMP: log so we can see what the API actually returns
+console.log("API raw:", raw);
+console.log("Parsed reply:", reply);
+
+const assistantMsg: ChatMsg = {
+  role: "assistant",
+  content: reply.trim() ? reply : "No response.",
+};
+
+      setMessages([...newMessages, assistantMsg]);
     } catch (e: any) {
-      setMessages((prev) => [
-        ...prev,
-        { role: "assistant", content: `ERROR: ${e?.message || "Unknown error"}` },
-      ]);
+      setErrorMsg(e?.message || "Something went wrong.");
+      // Put input back if it failed
+      setInput(userMsg.content);
+      // Also remove the last user message from UI if you want; leaving it is fine.
     } finally {
-      setSending(false);
+      setLoading(false);
     }
   }
 
-  if (loading) {
-    return <main style={{ padding: 24, color: "#6b7280" }}>Loading…</main>;
+  function onKeyDown(e: React.KeyboardEvent<HTMLTextAreaElement>) {
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      sendMessage();
+    }
   }
 
-  // ---------------- Styles ----------------
+  // Simple styles (clean + similar to your current UI)
   const shell: React.CSSProperties = {
-    height: "100vh",
+    minHeight: "100vh",
+    background: "#f6f7fb",
     display: "flex",
     flexDirection: "column",
-    background:
-      "radial-gradient(1000px 500px at 20% 0%, #eef2ff 0%, transparent 60%), radial-gradient(900px 450px at 100% 20%, #ecfeff 0%, transparent 55%), #f6f7fb",
-  };
-
-  const container: React.CSSProperties = {
-    width: "100%",
-    maxWidth: 1100,
-    margin: "0 auto",
-    padding: 18,
-    flex: 1,
-    display: "flex",
-    flexDirection: "column",
-    gap: 12,
   };
 
   const topBar: React.CSSProperties = {
+    height: 58,
     display: "flex",
     alignItems: "center",
     justifyContent: "space-between",
-    gap: 12,
-    padding: 14,
-    borderRadius: 16,
-    border: "1px solid #e5e7eb",
-    background: "rgba(255,255,255,0.85)",
-    backdropFilter: "blur(8px)",
-    boxShadow: "0 10px 30px rgba(15, 23, 42, 0.06)",
-  };
-
-  const avatar: React.CSSProperties = {
-    width: 38,
-    height: 38,
-    borderRadius: 12,
-    background: "linear-gradient(135deg, #111827 0%, #334155 70%)",
-    boxShadow: "0 10px 25px rgba(17,24,39,0.18)",
-    flexShrink: 0,
-  };
-
-  const btn: React.CSSProperties = {
-    padding: "10px 12px",
-    border: "1px solid #e5e7eb",
-    borderRadius: 12,
-    background: "white",
-    cursor: "pointer",
-    fontWeight: 750,
-  };
-
-  const btnPrimary: React.CSSProperties = {
-    ...btn,
-    background: "#111827",
-    color: "white",
-    border: "1px solid rgba(0,0,0,0.08)",
-  };
-
-  const card: React.CSSProperties = {
-    flex: 1,
-    display: "flex",
-    flexDirection: "column",
-    borderRadius: 16,
-    border: "1px solid #e5e7eb",
-    background: "white",
-    boxShadow: "0 12px 40px rgba(15, 23, 42, 0.08)",
-    overflow: "hidden",
-    minHeight: 0,
-  };
-
-  const cardHeader: React.CSSProperties = {
-    padding: "12px 14px",
+    padding: "0 16px",
     borderBottom: "1px solid #e5e7eb",
-    background: "#fafafa",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "space-between",
-    gap: 12,
+    background: "rgba(255,255,255,0.9)",
+    backdropFilter: "blur(10px)",
+    position: "sticky",
+    top: 0,
+    zIndex: 10,
   };
 
-  const chipRow: React.CSSProperties = {
-    display: "flex",
-    gap: 8,
-    flexWrap: "wrap",
+  const title: React.CSSProperties = {
+    fontWeight: 950,
+    color: "#0f172a",
+    letterSpacing: -0.02,
   };
 
-  const chip: React.CSSProperties = {
-    fontSize: 12,
-    padding: "6px 10px",
-    borderRadius: 999,
+  const btnSmall: React.CSSProperties = {
     border: "1px solid #e5e7eb",
     background: "white",
+    borderRadius: 12,
+    padding: "10px 12px",
     cursor: "pointer",
-    fontWeight: 650,
-    color: "#334155",
+    fontWeight: 900,
   };
 
-  const chatArea: React.CSSProperties = {
-    flex: 1,
-    minHeight: 0,
-    overflowY: "auto",
-    padding: 16,
-    background:
-      "linear-gradient(180deg, rgba(249,250,251,1) 0%, rgba(255,255,255,1) 30%)",
+  const wrap: React.CSSProperties = {
+    width: "100%",
+    maxWidth: 980,
+    margin: "0 auto",
+    padding: "18px 14px 110px",
   };
 
-  const bubbleWrap = (isUser: boolean): React.CSSProperties => ({
+  const bubbleRow = (role: Role): React.CSSProperties => ({
     display: "flex",
-    justifyContent: isUser ? "flex-end" : "flex-start",
-    marginBottom: 10,
+    justifyContent: role === "user" ? "flex-end" : "flex-start",
+    marginBottom: 12,
   });
 
-  const bubble = (isUser: boolean): React.CSSProperties => ({
-    maxWidth: "78%",
-    padding: "10px 12px",
-    borderRadius: 14,
-    border: "1px solid #e5e7eb",
-    background: isUser ? "#111827" : "white",
-    color: isUser ? "white" : "#111827",
+  const bubble = (role: Role): React.CSSProperties => ({
+    maxWidth: "min(760px, 92%)",
+    borderRadius: 18,
+    padding: "12px 14px",
+    lineHeight: 1.5,
     whiteSpace: "pre-wrap",
-    lineHeight: 1.45,
-    fontSize: 14,
+    border: role === "user" ? "1px solid rgba(0,0,0,0.08)" : "1px solid #e5e7eb",
+    background: role === "user" ? "#111827" : "white",
+    color: role === "user" ? "white" : "#0f172a",
+    boxShadow: role === "user" ? "0 10px 24px rgba(15, 23, 42, 0.12)" : "none",
   });
 
   const composer: React.CSSProperties = {
+    position: "fixed",
+    left: 0,
+    right: 0,
+    bottom: 0,
     borderTop: "1px solid #e5e7eb",
-    padding: 12,
-    background: "#fafafa",
+    background: "rgba(255,255,255,0.92)",
+    backdropFilter: "blur(10px)",
   };
 
-  const input: React.CSSProperties = {
+  const composerInner: React.CSSProperties = {
+    width: "100%",
+    maxWidth: 980,
+    margin: "0 auto",
+    padding: "12px 14px",
+    display: "flex",
+    gap: 10,
+    alignItems: "flex-end",
+  };
+
+  const inputBox: React.CSSProperties = {
     flex: 1,
-    padding: 12,
-    borderRadius: 12,
     border: "1px solid #e5e7eb",
-    outline: "none",
+    borderRadius: 14,
+    padding: "12px 12px",
     fontSize: 14,
-    background: "white",
+    outline: "none",
+    minHeight: 46,
+    maxHeight: 140,
+    resize: "none",
   };
 
-  // ----------------------------------------
+  const sendBtn: React.CSSProperties = {
+    border: "1px solid rgba(0,0,0,0.08)",
+    background: "#111827",
+    color: "white",
+    borderRadius: 14,
+    padding: "12px 14px",
+    fontWeight: 950,
+    cursor: "pointer",
+    minWidth: 92,
+    opacity: loading ? 0.7 : 1,
+  };
+
+  const helper: React.CSSProperties = {
+    color: "#6b7280",
+    fontSize: 12,
+    marginTop: 8,
+  };
 
   return (
     <main style={shell}>
-      <div style={container}>
-        {/* Top bar */}
-        <div style={topBar}>
-          <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-            <div style={avatar} />
-
-            <div>
-              <div style={{ fontSize: 18, fontWeight: 900, letterSpacing: -0.2 }}>
-                {profile.business_name || "Business Assistant"}
-              </div>
-
-              {locationLine && (
-                <div style={{ fontSize: 12, color: "#6b7280" }}>{locationLine}</div>
-              )}
-
-              {/* Powered by Pulse */}
-              <div
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 8,
-                  marginTop: 6,
-                  fontSize: 11,
-                  color: "#6b7280",
-                }}
-              >
-                <Image
-                  src="/pulse-logo.jpg"
-                  alt="Pulse"
-                  width={18}
-                  height={18}
-                  style={{ borderRadius: 5, opacity: 0.9 }}
-                />
-                <span>Powered by Pulse</span>
-              </div>
-            </div>
-          </div>
-
-          <div style={{ display: "flex", gap: 10 }}>
-            <button style={btn} onClick={() => router.push("/onboarding")}>
-              Settings
-            </button>
-            <button style={btn} onClick={logout}>
-              Log out
-            </button>
-          </div>
+      <header style={topBar}>
+        <div style={title}>{headerTitle}</div>
+        <div style={{ display: "flex", gap: 10 }}>
+          <button
+            style={btnSmall}
+            onClick={() => router.push("/onboarding")}
+            title="Edit your business settings"
+          >
+            Settings
+          </button>
+          <button
+            style={btnSmall}
+            onClick={() =>
+              setMessages([
+                {
+                  role: "assistant",
+                  content:
+                    "Hey — what do you need done? (quote, email, SOP/checklist, staff message, or something else)",
+                },
+              ])
+            }
+            title="Clear chat"
+          >
+            New chat
+          </button>
         </div>
+      </header>
 
-        {/* Chat card */}
-        <div style={card}>
-          <div style={cardHeader}>
-            <div style={{ fontSize: 12, color: "#6b7280" }}>
-              Quotes • Emails • SMS replies • Staff Q&amp;A
-            </div>
+      <div style={wrap}>
+        {messages.map((m, idx) => (
+          <div key={idx} style={bubbleRow(m.role)}>
+            <div style={bubble(m.role)}>{m.content}</div>
+          </div>
+        ))}
 
-            <div style={chipRow}>
-              <button style={chip} onClick={() => injectQuickPrompt("quote")}>
-                + Quote
-              </button>
-              <button style={chip} onClick={() => injectQuickPrompt("email")}>
-                + Email
-              </button>
-              <button style={chip} onClick={() => injectQuickPrompt("sms")}>
-                + SMS
-              </button>
+        {loading && (
+          <div style={bubbleRow("assistant")}>
+            <div style={bubble("assistant")}>Thinking…</div>
+          </div>
+        )}
+
+        {errorMsg && (
+          <div style={{ color: "#b91c1c", fontSize: 13, marginTop: 10 }}>
+            {errorMsg}
+          </div>
+        )}
+
+        <div ref={bottomRef} />
+      </div>
+
+      <div style={composer}>
+        <div style={composerInner}>
+          <div style={{ flex: 1 }}>
+            <textarea
+              style={inputBox}
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              onKeyDown={onKeyDown}
+              placeholder="Type here… (Enter to send, Shift+Enter for new line)"
+            />
+            <div style={helper}>
+              MotionDesk is for <b>internal</b> business help (quotes, emails, SOPs, staff support).
             </div>
           </div>
 
-          <div style={chatArea}>
-            {messages.length === 0 && (
-              <div style={{ color: "#6b7280", fontSize: 14, lineHeight: 1.5 }}>
-                Try:
-                <ul>
-                  <li>“Write a professional quote for a new customer.”</li>
-                  <li>“Write a follow-up message for a customer who hasn’t replied.”</li>
-                  <li>“What information should we collect before providing a quote?”</li>
-                </ul>
-              </div>
-            )}
-
-            {messages.map((m, i) => {
-              const isUser = m.role === "user";
-              return (
-                <div key={i} style={bubbleWrap(isUser)}>
-                  <div style={bubble(isUser)}>{m.content}</div>
-                </div>
-              );
-            })}
-
-            {sending && (
-              <div style={bubbleWrap(false)}>
-                <div style={bubble(false)}>
-                  <span style={{ color: "#6b7280" }}>typing…</span>
-                </div>
-              </div>
-            )}
-
-            <div ref={bottomRef} />
-          </div>
-
-          {/* Composer */}
-          <div style={composer}>
-            <div style={{ display: "flex", gap: 10 }}>
-              <input
-                value={message}
-                onChange={(e) => setMessage(e.target.value)}
-                placeholder="Type a message…"
-                style={input}
-                onKeyDown={(e) => e.key === "Enter" && sendMessage()}
-              />
-              <button
-                onClick={sendMessage}
-                disabled={sending}
-                style={{ ...btnPrimary, opacity: sending ? 0.75 : 1 }}
-              >
-                Send
-              </button>
-            </div>
-            <div style={{ fontSize: 12, color: "#6b7280", marginTop: 8 }}>
-              Tip: Include specific information and key details to get the best results.
-            </div>
-          </div>
+          <button style={sendBtn} onClick={sendMessage} disabled={loading}>
+            {loading ? "..." : "Send"}
+          </button>
         </div>
       </div>
     </main>
