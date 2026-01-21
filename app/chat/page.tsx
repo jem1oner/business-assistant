@@ -85,8 +85,8 @@ export default function ChatPage() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          messages: newMessages, // ✅ full conversation
-          settings: settings ?? null, // ✅ onboarding injected
+          messages: newMessages,
+          settings: settings ?? null,
         }),
       });
 
@@ -96,7 +96,6 @@ export default function ChatPage() {
         throw new Error(raw || "Request failed");
       }
 
-      // Parse JSON if possible, otherwise treat as plain text
       let reply = "";
       try {
         const data = JSON.parse(raw);
@@ -199,7 +198,7 @@ export default function ChatPage() {
     width: "100%",
     maxWidth: 1100,
     margin: "0 auto",
-    padding: "22px 16px 150px",
+    padding: "22px 16px 170px",
     flex: 1,
   };
 
@@ -254,60 +253,6 @@ export default function ChatPage() {
         : "0 10px 22px rgba(15, 23, 42, 0.07)",
   });
 
-  const composer: React.CSSProperties = {
-    position: "fixed",
-    left: 0,
-    right: 0,
-    bottom: 0,
-    borderTop: "1px solid rgba(229,231,235,0.9)",
-    background: "rgba(255,255,255,0.85)",
-    backdropFilter: "blur(14px)",
-  };
-
-  const composerInner: React.CSSProperties = {
-    width: "100%",
-    maxWidth: 980,
-    margin: "0 auto",
-    padding: "14px 16px",
-    display: "flex",
-    gap: 12,
-    alignItems: "flex-end",
-  };
-
-  const inputBox: React.CSSProperties = {
-    flex: 1,
-    border: "1px solid rgba(229,231,235,1)",
-    borderRadius: 16,
-    padding: "14px 14px",
-    fontSize: 14,
-    outline: "none",
-    minHeight: 54,
-    maxHeight: 180,
-    resize: "none",
-    background: "rgba(255,255,255,0.98)",
-    boxShadow: "0 14px 30px rgba(15, 23, 42, 0.06)",
-  };
-
-  const sendBtn: React.CSSProperties = {
-    border: "1px solid rgba(0,0,0,0.10)",
-    background: "#111827",
-    color: "white",
-    borderRadius: 16,
-    padding: "14px 18px",
-    fontWeight: 950,
-    cursor: "pointer",
-    minWidth: 110,
-    opacity: loading ? 0.7 : 1,
-    boxShadow: "0 18px 40px rgba(15, 23, 42, 0.20)",
-  };
-
-  const helper: React.CSSProperties = {
-    color: "#64748b",
-    fontSize: 12,
-    marginTop: 8,
-    lineHeight: 1.4,
-  };
-
   const errorStyle: React.CSSProperties = {
     color: "#b91c1c",
     fontSize: 13,
@@ -351,10 +296,87 @@ export default function ChatPage() {
     whiteSpace: "nowrap",
   };
 
+  // ✅ NEW: composer feels like one clean “bar”
+  const composer: React.CSSProperties = {
+    position: "fixed",
+    left: 0,
+    right: 0,
+    bottom: 0,
+    borderTop: "1px solid rgba(229,231,235,0.9)",
+    background: "rgba(255,255,255,0.86)",
+    backdropFilter: "blur(14px)",
+    padding: "14px 0 18px",
+  };
+
+  const composerInner: React.CSSProperties = {
+    width: "100%",
+    maxWidth: 980,
+    margin: "0 auto",
+    padding: "0 16px",
+  };
+
+  const composerBar: React.CSSProperties = {
+    display: "flex",
+    gap: 12,
+    alignItems: "flex-end",
+    borderRadius: 18,
+    border: "1px solid rgba(229,231,235,1)",
+    background: "rgba(255,255,255,0.96)",
+    boxShadow: "0 18px 50px rgba(15, 23, 42, 0.10)",
+    padding: "12px 12px",
+  };
+
+  const textarea: React.CSSProperties = {
+    flex: 1,
+    width: "100%",
+    border: "none",
+    outline: "none",
+    fontSize: 15,
+    lineHeight: 1.5,
+    padding: "10px 10px",
+    minHeight: 56,
+    maxHeight: 180,
+    resize: "none",
+    background: "transparent",
+    color: "#0f172a",
+    fontFamily:
+      '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, "Apple Color Emoji","Segoe UI Emoji"',
+  };
+
+  const sendBtn: React.CSSProperties = {
+    border: "1px solid rgba(0,0,0,0.10)",
+    background: "#111827",
+    color: "white",
+    borderRadius: 16,
+    padding: "14px 18px",
+    fontWeight: 950,
+    cursor: "pointer",
+    minWidth: 110,
+    opacity: loading ? 0.7 : 1,
+    boxShadow: "0 18px 40px rgba(15, 23, 42, 0.20)",
+  };
+
+  const helper: React.CSSProperties = {
+    color: "#64748b",
+    fontSize: 12,
+    marginTop: 10,
+    lineHeight: 1.4,
+    paddingLeft: 4,
+  };
+
+  const placeholderCSS = `
+    textarea::placeholder {
+      color: #94a3b8;
+      opacity: 1;
+    }
+  `;
+
   /* ---------------- UI ---------------- */
 
   return (
     <main style={shell}>
+      <style>{placeholderCSS}</style>
+
       <header style={topBar}>
         <div style={brand}>
           <Image
@@ -449,22 +471,22 @@ export default function ChatPage() {
 
       <div style={composer}>
         <div style={composerInner}>
-          <div style={{ flex: 1 }}>
+          <div style={composerBar}>
             <textarea
-              style={inputBox}
+              style={textarea}
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={onKeyDown}
-              placeholder="Type what you need… e.g. ‘Quote a 2m³ load, include callout, and keep it short’"
+              placeholder="Type what you need… e.g. Quote a 2m³ load, include callout, keep it short"
             />
-            <div style={helper}>
-              Tip: Be specific (job details, pricing rules, deadlines). MotionDesk will keep the tone you set.
-            </div>
+            <button style={sendBtn} onClick={sendMessage} disabled={loading}>
+              {loading ? "..." : "Send"}
+            </button>
           </div>
 
-          <button style={sendBtn} onClick={sendMessage} disabled={loading}>
-            {loading ? "..." : "Send"}
-          </button>
+          <div style={helper}>
+            Tip: Include job details, pricing rules, deadlines — MotionDesk will keep your tone.
+          </div>
         </div>
       </div>
     </main>
