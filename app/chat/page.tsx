@@ -46,7 +46,6 @@ export default function ChatPage() {
     try {
       const raw = localStorage.getItem(SETTINGS_KEY);
       if (!raw) return;
-
       const parsed = JSON.parse(raw) as MotionDeskSettings;
       setSettings(parsed);
     } catch {
@@ -81,23 +80,20 @@ export default function ChatPage() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          messages: newMessages, // ✅ full conversation (memory)
-          settings: settings ?? null, // ✅ onboarding injected
+          messages: newMessages,
+          settings: settings ?? null,
         }),
       });
 
-      // IMPORTANT: only read the response body ONCE
       const raw = await res.text();
 
       if (!res.ok) {
         throw new Error(raw || "Request failed");
       }
 
-      // Parse JSON if possible, otherwise treat as plain text
       let reply = "";
       try {
         const data = JSON.parse(raw);
-
         reply =
           (typeof data?.reply === "string" && data.reply) ||
           (typeof data?.message === "string" && data.message) ||
@@ -131,66 +127,139 @@ export default function ChatPage() {
     }
   }
 
-  // -------- Styles (unchanged) --------
+  /* ---------------- Styles ---------------- */
+
   const shell: React.CSSProperties = {
     minHeight: "100vh",
-    background: "#f6f7fb",
     display: "flex",
     flexDirection: "column",
+    background:
+      "radial-gradient(1100px 550px at 15% 0%, #eef2ff 0%, transparent 60%), radial-gradient(1000px 600px at 100% 20%, #ecfeff 0%, transparent 55%), #f6f7fb",
   };
 
   const topBar: React.CSSProperties = {
-    height: 58,
+    height: 64,
     display: "flex",
     alignItems: "center",
     justifyContent: "space-between",
-    padding: "0 16px",
-    borderBottom: "1px solid #e5e7eb",
-    background: "rgba(255,255,255,0.9)",
-    backdropFilter: "blur(10px)",
+    padding: "0 18px",
+    borderBottom: "1px solid rgba(229,231,235,0.9)",
+    background: "rgba(255,255,255,0.75)",
+    backdropFilter: "blur(12px)",
     position: "sticky",
     top: 0,
     zIndex: 10,
   };
 
-  const title: React.CSSProperties = {
+  const brand: React.CSSProperties = {
+    display: "flex",
+    alignItems: "center",
+    gap: 10,
     fontWeight: 950,
     color: "#0f172a",
     letterSpacing: -0.02,
   };
 
-  const btnSmall: React.CSSProperties = {
-    border: "1px solid #e5e7eb",
-    background: "white",
+  const logoDot: React.CSSProperties = {
+    width: 34,
+    height: 34,
     borderRadius: 12,
+    background: "#111827",
+    boxShadow: "0 10px 25px rgba(15, 23, 42, 0.18)",
+  };
+
+  const titleWrap: React.CSSProperties = {
+    display: "flex",
+    flexDirection: "column",
+    lineHeight: 1.1,
+  };
+
+  const title: React.CSSProperties = {
+    fontSize: 14,
+    fontWeight: 950,
+  };
+
+  const subtitle: React.CSSProperties = {
+    fontSize: 12,
+    color: "#64748b",
+    fontWeight: 700,
+    marginTop: 2,
+  };
+
+  const btnSmall: React.CSSProperties = {
+    border: "1px solid rgba(229,231,235,1)",
+    background: "rgba(255,255,255,0.9)",
+    borderRadius: 14,
     padding: "10px 12px",
     cursor: "pointer",
     fontWeight: 900,
+    color: "#0f172a",
   };
 
-  const wrap: React.CSSProperties = {
+  const mainWrap: React.CSSProperties = {
+    width: "100%",
+    maxWidth: 1080,
+    margin: "0 auto",
+    padding: "18px 16px 120px",
+    flex: 1,
+  };
+
+  const card: React.CSSProperties = {
     width: "100%",
     maxWidth: 980,
     margin: "0 auto",
-    padding: "18px 14px 110px",
+    borderRadius: 22,
+    border: "1px solid rgba(229,231,235,0.9)",
+    background: "rgba(255,255,255,0.78)",
+    backdropFilter: "blur(10px)",
+    boxShadow: "0 18px 60px rgba(15, 23, 42, 0.08)",
+    padding: "18px 18px 10px",
   };
 
   const bubbleRow = (role: Role): React.CSSProperties => ({
     display: "flex",
     justifyContent: role === "user" ? "flex-end" : "flex-start",
+    gap: 10,
     marginBottom: 12,
   });
 
+  const avatar = (role: Role): React.CSSProperties => ({
+    width: 34,
+    height: 34,
+    borderRadius: 14,
+    border: "1px solid rgba(229,231,235,1)",
+    background: role === "assistant" ? "white" : "transparent",
+    display: role === "assistant" ? "flex" : "none",
+    alignItems: "center",
+    justifyContent: "center",
+    boxShadow: role === "assistant" ? "0 12px 28px rgba(15, 23, 42, 0.08)" : "none",
+    flex: "0 0 auto",
+  });
+
+  const avatarDot: React.CSSProperties = {
+    width: 10,
+    height: 10,
+    borderRadius: 999,
+    background: "#111827",
+  };
+
   const bubble = (role: Role): React.CSSProperties => ({
-    maxWidth: "min(760px, 92%)",
+    maxWidth: "min(780px, 92%)",
     borderRadius: 18,
     padding: "12px 14px",
-    lineHeight: 1.5,
+    lineHeight: 1.55,
     whiteSpace: "pre-wrap",
-    border: role === "user" ? "1px solid rgba(0,0,0,0.08)" : "1px solid #e5e7eb",
-    background: role === "user" ? "#111827" : "white",
+    fontSize: 14,
+    border: role === "user" ? "1px solid rgba(0,0,0,0.10)" : "1px solid rgba(229,231,235,1)",
+    background:
+      role === "user"
+        ? "linear-gradient(180deg, #111827 0%, #0b1220 100%)"
+        : "rgba(255,255,255,0.95)",
     color: role === "user" ? "white" : "#0f172a",
-    boxShadow: role === "user" ? "0 10px 24px rgba(15, 23, 42, 0.12)" : "none",
+    boxShadow:
+      role === "user"
+        ? "0 14px 30px rgba(15, 23, 42, 0.18)"
+        : "0 10px 22px rgba(15, 23, 42, 0.06)",
   });
 
   const composer: React.CSSProperties = {
@@ -198,56 +267,79 @@ export default function ChatPage() {
     left: 0,
     right: 0,
     bottom: 0,
-    borderTop: "1px solid #e5e7eb",
-    background: "rgba(255,255,255,0.92)",
-    backdropFilter: "blur(10px)",
+    borderTop: "1px solid rgba(229,231,235,0.9)",
+    background: "rgba(255,255,255,0.82)",
+    backdropFilter: "blur(12px)",
   };
 
   const composerInner: React.CSSProperties = {
     width: "100%",
     maxWidth: 980,
     margin: "0 auto",
-    padding: "12px 14px",
+    padding: "14px 16px",
     display: "flex",
-    gap: 10,
+    gap: 12,
     alignItems: "flex-end",
   };
 
   const inputBox: React.CSSProperties = {
     flex: 1,
-    border: "1px solid #e5e7eb",
-    borderRadius: 14,
+    border: "1px solid rgba(229,231,235,1)",
+    borderRadius: 16,
     padding: "12px 12px",
     fontSize: 14,
     outline: "none",
-    minHeight: 46,
-    maxHeight: 140,
+    minHeight: 48,
+    maxHeight: 160,
     resize: "none",
+    background: "rgba(255,255,255,0.95)",
   };
 
   const sendBtn: React.CSSProperties = {
-    border: "1px solid rgba(0,0,0,0.08)",
+    border: "1px solid rgba(0,0,0,0.10)",
     background: "#111827",
     color: "white",
-    borderRadius: 14,
-    padding: "12px 14px",
+    borderRadius: 16,
+    padding: "12px 16px",
     fontWeight: 950,
     cursor: "pointer",
-    minWidth: 92,
+    minWidth: 96,
     opacity: loading ? 0.7 : 1,
+    boxShadow: "0 16px 34px rgba(15, 23, 42, 0.18)",
   };
 
   const helper: React.CSSProperties = {
-    color: "#6b7280",
+    color: "#64748b",
     fontSize: 12,
     marginTop: 8,
+    lineHeight: 1.4,
   };
-  // -----------------------------------
+
+  const errorStyle: React.CSSProperties = {
+    color: "#b91c1c",
+    fontSize: 13,
+    marginTop: 10,
+  };
+
+  const divider: React.CSSProperties = {
+    height: 1,
+    background: "rgba(229,231,235,0.9)",
+    margin: "10px 0 14px",
+  };
+
+  /* ---------------- UI ---------------- */
 
   return (
     <main style={shell}>
       <header style={topBar}>
-        <div style={title}>{headerTitle}</div>
+        <div style={brand}>
+          <div style={logoDot} />
+          <div style={titleWrap}>
+            <div style={title}>{headerTitle}</div>
+            <div style={subtitle}>Internal assistant • quotes • emails • SOPs</div>
+          </div>
+        </div>
+
         <div style={{ display: "flex", gap: 10 }}>
           <button
             style={btnSmall}
@@ -274,26 +366,30 @@ export default function ChatPage() {
         </div>
       </header>
 
-      <div style={wrap}>
-        {messages.map((m, idx) => (
-          <div key={idx} style={bubbleRow(m.role)}>
-            <div style={bubble(m.role)}>{m.content}</div>
-          </div>
-        ))}
+      <div style={mainWrap}>
+        <div style={card}>
+          <div style={divider} />
 
-        {loading && (
-          <div style={bubbleRow("assistant")}>
-            <div style={bubble("assistant")}>Thinking…</div>
-          </div>
-        )}
+          {messages.map((m, idx) => (
+            <div key={idx} style={bubbleRow(m.role)}>
+              <div style={avatar(m.role)}>{m.role === "assistant" && <div style={avatarDot} />}</div>
+              <div style={bubble(m.role)}>{m.content}</div>
+            </div>
+          ))}
 
-        {errorMsg && (
-          <div style={{ color: "#b91c1c", fontSize: 13, marginTop: 10 }}>
-            {errorMsg}
-          </div>
-        )}
+          {loading && (
+            <div style={bubbleRow("assistant")}>
+              <div style={avatar("assistant")}>
+                <div style={avatarDot} />
+              </div>
+              <div style={bubble("assistant")}>Thinking…</div>
+            </div>
+          )}
 
-        <div ref={bottomRef} />
+          {errorMsg && <div style={errorStyle}>{errorMsg}</div>}
+
+          <div ref={bottomRef} />
+        </div>
       </div>
 
       <div style={composer}>
@@ -307,7 +403,7 @@ export default function ChatPage() {
               placeholder="Type here… (Enter to send, Shift+Enter for new line)"
             />
             <div style={helper}>
-              MotionDesk is for <b>internal</b> business help (quotes, emails, SOPs, staff support).
+              MotionDesk is for <b>internal</b> business help — keep it practical and ready-to-send.
             </div>
           </div>
 
